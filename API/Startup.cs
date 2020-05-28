@@ -7,6 +7,8 @@ using Microsoft.EntityFrameworkCore;
 using Persistence;
 using MediatR;
 using Application.Activities;
+using FluentValidation.AspNetCore;
+using API.Middleware;
 
 namespace API
 {
@@ -37,15 +39,21 @@ namespace API
             // only need the assembly of where the mediatR query/handlers are located so get it from one type located there
             // and it will infer the rest from the assembly' relative location
             services.AddMediatR(typeof(List.Handler).Assembly);
-            services.AddControllers();
+            services.AddControllers()
+                .AddFluentValidation(cfg =>
+                {
+                    // only need to indicate one class because its going to register all the validators from the assembly the class supplied is associated with
+                    cfg.RegisterValidatorsFromAssemblyContaining<Create>();
+                });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            app.UseMiddleware<ErrorHandlingMiddleware>();
             if (env.IsDevelopment())
             {
-                app.UseDeveloperExceptionPage();
+                //app.UseDeveloperExceptionPage();
             }
 
             //app.UseHttpsRedirection();

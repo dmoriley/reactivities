@@ -64,7 +64,7 @@ class ActivityStore {
           this.activity = activity;          
         });
       } catch (error) {
-        console.log(error);
+        console.log(error)
       } finally {
         runInAction('load activity finally', () => {
           this.loadingInitial = false
