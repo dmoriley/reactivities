@@ -1,6 +1,6 @@
 import React from 'react'
 import { observer } from 'mobx-react-lite'
-import { IActivity } from '../../../app/models/activity'
+import { IActivity } from '../../../models/activity'
 import { Segment, Grid, Icon } from 'semantic-ui-react'
 
 const ActivityDetailedInfo: React.FC<{activity: IActivity}> = ({activity}) => {
