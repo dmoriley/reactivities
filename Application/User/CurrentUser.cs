@@ -25,6 +25,8 @@ namespace Application.User
         
             public async Task<User> Handle(Query request, CancellationToken cancellationToken)
             {
+                // able to find user on httpcontext because at this point the authentication has been resolved on this route
+                // and the user object is inside the http context
                 var user = await _userManager.FindByNameAsync(_userAccessor.GetCurrentUsername());
 
                 return new User
