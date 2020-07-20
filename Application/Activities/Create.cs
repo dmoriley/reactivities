@@ -1,8 +1,11 @@
-﻿using Domain;
+﻿using Application.Interfaces;
+using Domain;
 using FluentValidation;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using Persistence;
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -37,10 +40,12 @@ namespace Application.Activities
         public class Handler : IRequestHandler<Command>
         {
             private readonly DataContext _context;
+            private readonly IUserAccessor _userAccessor;
 
-            public Handler(DataContext context)
+            public Handler(DataContext context, IUserAccessor userAccessor)
             {
                 this._context = context;
+                this._userAccessor = userAccessor;
             }
 
             public async Task<Unit> Handle(Command request, CancellationToken cancellationToken)
@@ -58,7 +63,20 @@ namespace Application.Activities
 
                 // Add async used only for special value generation cases when stuff is added to the db. Not this project
                 this._context.Activities.Add(activity); // adds new activity to the entity framework
-                // entity framework reflects new changes to db
+
+                var user = await _context.Users.SingleOrDefaultAsync(x => x.UserName == _userAccessor.GetCurrentUsername());
+                var attendee = new UserActivity
+                {
+                    AppUser = user,
+                    Activity = activity,
+                    IsHost = true,
+                    DateJoined = DateTime.Now
+                };
+
+                _context.UserActivities.Add(attendee); // add new UserActivity to entity framework
+
+
+                // everything is save in memory before this point, entity framework reflects new changes to db after save
                 // if save returns 0 it was unsuccesfull in saving changes
                 var success = await this._context.SaveChangesAsync() > 0;
 

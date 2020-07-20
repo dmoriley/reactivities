@@ -18,6 +18,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Authorization;
+using AutoMapper;
 
 namespace API
 {
@@ -35,6 +36,7 @@ namespace API
         {
             services.AddDbContext<DataContext>(opt =>
             {
+                opt.UseLazyLoadingProxies(); // add lazy loading to application
                 opt.UseSqlite(Configuration.GetConnectionString("DefaultConnection"));
             });
             services.AddCors(opt => {
@@ -48,6 +50,7 @@ namespace API
             // only need the assembly of where the mediatR query/handlers are located so get it from one type located there
             // and it will infer the rest from the assembly' relative location
             services.AddMediatR(typeof(List.Handler).Assembly);
+            services.AddAutoMapper(typeof(List.Handler).Assembly);
             services.AddControllers(opt => 
             {
                 // set up need for every endpoint of application to have be authorized, so have valid JWT token in header
@@ -64,6 +67,17 @@ namespace API
             var identityBuilder = new IdentityBuilder(builder.UserType, builder.Services);
             identityBuilder.AddEntityFrameworkStores<DataContext>();
             identityBuilder.AddSignInManager<SignInManager<AppUser>>();
+
+            services.AddAuthorization(opt =>
+            {
+                opt.AddPolicy("IsActivityHost", policy =>
+                {
+                    policy.Requirements.Add(new IsHostRequirement());
+                });
+            });
+
+            // transient so its only available for the liftime of the operation, not the request
+            services.AddTransient<IAuthorizationHandler, IsHostRequirementHandler>();
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["TokenKey"]));
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
