@@ -6,6 +6,9 @@ export interface IActivity {
   date: Date;
   city: string;
   venue: string;
+  isGoing: boolean;
+  isHost: boolean;
+  attendees: IAttendee[];
 }
 
 // partial means all the properties passed to are optional
@@ -30,4 +33,11 @@ export class ActivityFormValues implements IActivityFormValues {
     // assign properties of init to the class properties.
     Object.assign(this, init);
   }
+}
+
+export interface IAttendee {
+  username: string;
+  displayName: string;
+  image: string;
+  isHost: boolean;
 }
