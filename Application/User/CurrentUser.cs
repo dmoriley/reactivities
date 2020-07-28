@@ -4,6 +4,7 @@ using System.Threading;
 using Application.Interfaces;
 using Domain;
 using Microsoft.AspNetCore.Identity;
+using System.Linq;
 
 namespace Application.User
 {
@@ -34,7 +35,7 @@ namespace Application.User
                     DisplayName = user.UserName,
                     Username = user.UserName,
                     Token = _jwtGenerator.CreateToken(user),
-                    Image = null
+                    Image = user.Photos.FirstOrDefault(x => x.IsMain)?.Url
                 };
             }
         }
