@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Application.Profiles
 {
-    public class Profile
+    public class ProfileDto
     {
         public string DisplayName { get; set; }
         public string Username { get; set; }

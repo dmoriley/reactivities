@@ -10,12 +10,12 @@ namespace Application.Profiles
 {
     public class Details
     {
-        public class Query : IRequest<Profile> 
+        public class Query : IRequest<ProfileDto> 
         {
             public string Username { get; set; }
         }
         
-        public class Handler : IRequestHandler<Query, Profile>
+        public class Handler : IRequestHandler<Query, ProfileDto>
         {
             private readonly DataContext _context;
         
@@ -24,10 +24,10 @@ namespace Application.Profiles
                 _context = context;
             }
         
-            public async Task<Profile> Handle(Query request, CancellationToken cancellationToken)
+            public async Task<ProfileDto> Handle(Query request, CancellationToken cancellationToken)
             {
                 var user = await _context.Users.SingleOrDefaultAsync(x => x.UserName == request.Username);
-                return new Profile
+                return new ProfileDto
                 {
                     DisplayName = user.DisplayName,
                     Username = user.UserName,
