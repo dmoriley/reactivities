@@ -15,5 +15,6 @@ namespace Domain
         
         // virtual to indicate this property should be lazy loaded navigation property
         public virtual ICollection<UserActivity> UserActivities { get; set; }
+        public virtual ICollection<Comment> Comments { get; set; }
     }
 }

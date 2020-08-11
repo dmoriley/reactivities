@@ -20,6 +20,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using AutoMapper;
 using Infrastructure.Photos;
+using API.SignalR;
+using System.Threading.Tasks;
 
 namespace API
 {
@@ -45,13 +47,15 @@ namespace API
                 {
                     // any request coming from the client application at localhost 3000 with be able to use any
                     // method (get post put...) and any header
-                    policy.AllowAnyHeader().AllowAnyMethod().WithOrigins("http://localhost:3000");
+                    // allow credentials so Chat hub will work;
+                    policy.AllowAnyHeader().AllowAnyMethod().WithOrigins("http://localhost:3000").AllowCredentials();
                 });
             });
             // only need the assembly of where the mediatR query/handlers are located so get it from one type located there
             // and it will infer the rest from the assembly' relative location
             services.AddMediatR(typeof(List.Handler).Assembly);
             services.AddAutoMapper(typeof(List.Handler).Assembly);
+            services.AddSignalR();
             services.AddControllers(opt => 
             {
                 // set up need for every endpoint of application to have be authorized, so have valid JWT token in header
@@ -91,6 +95,21 @@ namespace API
                         ValidateAudience = false,
                         ValidateIssuer = false
                     };
+
+                    opt.Events = new JwtBearerEvents
+                    {
+                        OnMessageReceived = context =>
+                        {
+                            var accessToken = context.Request.Query["access_token"];
+                            var path = context.HttpContext.Request.Path;
+                            // check if we have an access token and that the path is the chat path
+                            if(!string.IsNullOrEmpty(accessToken) && (path.StartsWithSegments("/chat")))
+                            {
+                                context.Token = accessToken;
+                            }
+                            return Task.CompletedTask;
+                        }
+                    };
                 });
 
             services.AddScoped<IJwtGenerator, JwtGenerator>();
@@ -121,6 +140,8 @@ namespace API
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+                // whenever request comes in with this url will redirect to this ChatHub
+                endpoints.MapHub<ChatHub>("/chat");
             });
         }
     }

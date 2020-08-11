@@ -6,6 +6,7 @@ import { history } from '../..';
 import { toast } from 'react-toastify';
 import { RootStore } from './root.store';
 import { setActivityProps, createAttendee } from '../common/Util/util';
+import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr'
 
 export default class ActivityStore {
   rootStore: RootStore;
@@ -20,6 +21,8 @@ export default class ActivityStore {
   @observable submitting = false;
   @observable target = ''; // determine which button has loading
   @observable loading = false;
+  // observe reference to an object, not every property of the object
+  @observable.ref hubConnection: HubConnection | null = null;
 
   @computed get activitiesByDate() {
     return this.groupActivitiesByDate(Array.from(this.activityRegistry.values()));
@@ -99,6 +102,7 @@ export default class ActivityStore {
       const attendee = createAttendee(this.rootStore.userStore.user!);
       attendee.isHost = true;
       activity.attendees = [attendee];
+      activity.comments = [];
       activity.isHost = true;
       runInAction('creating activity', () => {
         this.activityRegistry.set(activity.id, activity);
@@ -189,6 +193,61 @@ export default class ActivityStore {
         this.loading = false;
       });
       toast.error('Problem cancelling attendance.');
+    }
+  }
+
+  @action createHubConnection = (activityId: string) => {
+    this.hubConnection = new HubConnectionBuilder()
+      .withUrl('http://localhost:5000/chat', {
+        accessTokenFactory: () => this.rootStore.commonStore.token!
+      })
+      .configureLogging(LogLevel.Information)
+      .build();
+      // normally we send up our token in an http header, but were using a different protocol for 
+      // the hub so we are sending our token up as a query string
+      this.hubConnection
+        .start()
+        .then(() => console.log(this.hubConnection!.state))
+        .then(() => {
+          console.log('Attempting to join group');
+          if(this.hubConnection!.state === 'Connected') {
+            // invoke param must match method name in api
+            this.hubConnection!.invoke('AddToGroup', activityId)
+          }
+        })
+        .catch(error => console.log('Error establishing connection to Hub: ', error));
+
+      // name of the on action must match what is send from our hub in our api
+      this.hubConnection.on('ReceiveComment', comment => {
+        runInAction(() => {
+          this.activity!.comments.push(comment);
+        });
+      })
+
+      this.hubConnection.on('Send', message => {
+        toast.info(message);
+      })
+  }
+
+  @action stopHubConnection = () => {
+    this.hubConnection!.invoke('RemoveFromGroup', this.activity!.id)
+      .then(() => {
+        // have to stop the connection when leaving an activity detail
+        this.hubConnection!.stop();
+      })
+      .then(() => console.log('Connection has stopped.'))
+      .catch(err => console.log(err))
+  }
+
+  @action addComment = async (values: any) => {
+    // structure of values must match what the comment handler is expection in the request object
+    values.activityId = this.activity!.id;
+    try {
+      // sendComment needs to match exactly what is inside our chathub
+      // because we are directly invoking the method name in our client
+      await this.hubConnection!.invoke('SendComment', values);
+    } catch (error) {
+      console.log(error);
     }
   }
 }
