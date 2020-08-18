@@ -8,6 +8,8 @@ import { RootStore } from './root.store';
 import { setActivityProps, createAttendee } from '../common/Util/util';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr'
 
+const LIMIT = 2;
+
 export default class ActivityStore {
   rootStore: RootStore;
 
@@ -23,6 +25,12 @@ export default class ActivityStore {
   @observable loading = false;
   // observe reference to an object, not every property of the object
   @observable.ref hubConnection: HubConnection | null = null;
+  @observable activityCount = 0;
+  @observable page = 0;
+
+  @computed get totalPages() {
+    return Math.ceil(this.activityCount / LIMIT);
+  }
 
   @computed get activitiesByDate() {
     return this.groupActivitiesByDate(Array.from(this.activityRegistry.values()));
@@ -42,7 +50,8 @@ export default class ActivityStore {
   @action loadActivities = async () => {
     this.loadingInitial = true;
     try {
-      const activities = await agent.Activities.list();
+      const activitiesEnvelope = await agent.Activities.list(LIMIT, this.page);
+      const {activities, activityCount} = activitiesEnvelope;
       /*
         Actions apply to the current function. Everything that happens after await is technically another function because its the equivalient of
         .then(() => {...}), just the syntax is nicer to work with. In mobx strict mode everything that modifies an observable needs to be done in
@@ -54,6 +63,7 @@ export default class ActivityStore {
           setActivityProps(activity, this.rootStore.userStore.user!);
           this.activityRegistry.set(activity.id, activity);
         });
+        this.activityCount = activityCount;
       });
     } catch (error) {
       console.log(error);
@@ -250,4 +260,9 @@ export default class ActivityStore {
       console.log(error);
     }
   }
+
+  @action setPage = (page: number) => {
+    this.page = page;
+  }
+
 }
