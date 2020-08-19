@@ -5,6 +5,7 @@ import { Grid, Loader } from 'semantic-ui-react';
 import LoadingComponent from '../../../layout/LoadingComponent';
 import { RootStoreContext } from '../../../stores/root.store';
 import ActivityList from './ActivityList';
+import ActivityFilters from './ActivityFilters';
 
 const ActivityDashboard: React.FC = () => {
   const rootStore = useContext(RootStoreContext);
@@ -38,7 +39,7 @@ const ActivityDashboard: React.FC = () => {
         </InfiniteScroll>
       </Grid.Column>
       <Grid.Column width={6}>
-        <h2>Activity filters</h2>
+        <ActivityFilters />
       </Grid.Column>
       <Grid.Column width={10}>
         <Loader active={loadingNext}/>
