@@ -1,5 +1,5 @@
 import { IActivity } from './../models/activity';
-import { observable, action, computed, runInAction, reaction } from 'mobx';
+import { observable, action, computed, runInAction, reaction, toJS } from 'mobx';
 import { SyntheticEvent } from 'react';
 import agent from '../api/agent';
 import { history } from '../..';
@@ -99,10 +99,10 @@ export default class ActivityStore {
   };
 
   @action loadActivity = async (id: string) => {
-    let activity = this.getActivity(id);
+    let activity = this.getActivity(id); // this will return the activity from the store, but it will be an observable
     if(activity) {
       this.activity = activity;
-      return activity;
+      return toJS(activity); // passing it to the form needs observable to be changed to JS cause its altered for the form
     } else {
       this.loadingInitial = true;
       try {
@@ -258,9 +258,10 @@ export default class ActivityStore {
         });
       })
 
-      this.hubConnection.on('Send', message => {
-        toast.info(message);
-      })
+      // toast message to let user know someone joined/left the page/chat
+      // this.hubConnection.on('Send', message => {
+      //   toast.info(message);
+      // })
   }
 
   @action stopHubConnection = () => {
