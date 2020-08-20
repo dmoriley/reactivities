@@ -23,6 +23,7 @@ using Infrastructure.Photos;
 using API.SignalR;
 using System.Threading.Tasks;
 using Application.Profiles;
+using System;
 
 namespace API
 {
@@ -49,7 +50,12 @@ namespace API
                     // any request coming from the client application at localhost 3000 with be able to use any
                     // method (get post put...) and any header
                     // allow credentials so Chat hub will work;
-                    policy.AllowAnyHeader().AllowAnyMethod().WithOrigins("http://localhost:3000").AllowCredentials();
+                    policy
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .WithExposedHeaders("WWW-Authenticate") // for token expiry header 401
+                        .WithOrigins("http://localhost:3000")
+                        .AllowCredentials();
                 });
             });
             // only need the assembly of where the mediatR query/handlers are located so get it from one type located there
@@ -94,7 +100,9 @@ namespace API
                         ValidateIssuerSigningKey = true,
                         IssuerSigningKey = key,
                         ValidateAudience = false,
-                        ValidateIssuer = false
+                        ValidateIssuer = false,
+                        ValidateLifetime = true,
+                        ClockSkew = TimeSpan.Zero, // no five minute leeway on expiry
                     };
 
                     opt.Events = new JwtBearerEvents

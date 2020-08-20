@@ -24,10 +24,16 @@ axios.interceptors.response.use(undefined, error => {
     toast.error('Network error - make sure the API is running!');
   }
 
-  const {status, data, config} = error.response;
+  const {status, data, config, headers} = error.response;
   // guid not found
   if(status === 404) {
     history.push('/notfound');
+  }
+
+  if(status === 401 && headers['www-authenticate'] && headers['www-authenticate'].toLowerCase().includes('the token expired')) {
+    window.localStorage.removeItem('jwt');
+    history.push('/');
+    toast.info('Your session has expired, please log in again.');
   }
 
   // bad guid 
