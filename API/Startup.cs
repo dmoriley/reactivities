@@ -139,6 +139,8 @@ namespace API
             }
 
             //app.UseHttpsRedirection();
+            app.UseDefaultFiles();
+            app.UseStaticFiles();
 
             app.UseRouting();
             app.UseCors("CorsPolicy");
@@ -152,6 +154,8 @@ namespace API
                 endpoints.MapControllers();
                 // whenever request comes in with this url will redirect to this ChatHub
                 endpoints.MapHub<ChatHub>("/chat");
+                // for serving static files, any routes it doesnt know send to the react application
+                endpoints.MapFallbackToController("Index", "Fallback");
             });
         }
     }
